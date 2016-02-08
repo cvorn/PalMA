@@ -1,0 +1,17 @@
+# Travis configuration for PalMA
+
+sudo: false
+
+language: php
+
+# php-codesniffer is used for the PSR-2 conformance test.
+addons:
+  apt:
+    packages:
+      - php-codesniffer
+      - libperl-critic-perl
+      - shellcheck
+
+script:
+      - bash docs/dist/pre-commit.sh .
+      - bash docs/dist/pre-push.sh

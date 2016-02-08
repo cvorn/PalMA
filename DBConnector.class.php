@@ -11,15 +11,13 @@ if (!isset($unittest)) {
 }
 $unittest[__FILE__] = (sizeof(get_included_files()) == 1);
 
-function trace($text) {
+function trace($text)
+{
     error_log("palma: $text");
 }
 
 class DBConnector extends SQLite3
 {
-    private $_WINDOWS = array();
-    private $_WINDOW_COUNT;
-
     const SQL_CREATE_TABLES = <<< eod
 
 PRAGMA foreign_keys = ON;
@@ -73,7 +71,8 @@ eod;
     // TODO: allow additional flags for constructor:
     // $flags = SQLITE3_OPEN_READWRITE|SQLITE3_OPEN_CREATE
     // $encryption_key
-    public function __construct($filename = false) {
+    public function __construct($filename = false)
+    {
         if (!$filename) {
             $filename = dirname(__FILE__) . '/palma.db';
         }
@@ -85,25 +84,21 @@ eod;
 
         // Create any missing tables.
         $this->exec(self::SQL_CREATE_TABLES);
-
-        $q_init = $this->query('SELECT MAX(id) FROM window WHERE state="active"');
-
-        /* if($q_init == true) {
-            $this->_WINDOW_COUNT = $this->countWindows();
-            $this->_WINDOWS = $this->getWindows();
-        }  */
     }
 
-    public function resetTables() {
+    public function resetTables()
+    {
         $this->exec(self::SQL_RESET_TABLES . self::SQL_CREATE_TABLES);
     }
 
-    public function countWindows() {
+    public function countWindows()
+    {
         $numRows = $this->querySingle('SELECT count(*) FROM window WHERE state="active"');
         return $numRows;
     }
 
-    public function nextID() {
+    public function nextID()
+    {
         // Find the first unused monitor section and return its number.
         $quadrant_ids = array(1, 2, 3, 4);
         $window_db_ids = array();
@@ -126,19 +121,21 @@ eod;
         return $next;
     }
 
-    public function ipAddress() {
+    public function ipAddress()
+    {
         $ip = 'unknown';
         if (isset($_SERVER['HTTP_X_FORWARDED_FOR'])) {
             // Server is hidden behind a proxy.
             $ip = $_SERVER['HTTP_X_FORWARDED_FOR'];
-        } else if (isset($_SERVER['REMOTE_ADDR'])) {
+        } elseif (isset($_SERVER['REMOTE_ADDR'])) {
             // Client has direct access to the server.
             $ip = $_SERVER['REMOTE_ADDR'];
         }
         return $ip;
     }
 
-    public function addUser($username, $address, $device = 'laptop') {
+    public function addUser($username, $address, $device = 'laptop')
+    {
         // Add a new user with his/her address and the device to the database.
         // TODO: Support more than one address for a given username.
         $this->exec("INSERT OR IGNORE INTO user VALUES (NULL, '$username', 1, 0)");
@@ -152,7 +149,8 @@ eod;
         }
     }
 
-    public function delUser($username, $address) {
+    public function delUser($username, $address)
+    {
         // Remove an existing user with his/her address from the database.
         // TODO: Support more than one address for a given username.
         $ip = $this->ipAddress();
@@ -169,14 +167,16 @@ eod;
         }
     }
 
-    public function enableUser($username) {
+    public function enableUser($username)
+    {
         $state = $this->exec("UPDATE user SET enabled=1 WHERE name='$username'");
         if (!$state) {
             trace("enableUser($username) failed");
         }
     }
 
-    public function getUsers() {
+    public function getUsers()
+    {
         $users = array();
         $rows = $this->query("SELECT name FROM user");
         while ($row = $rows->fetchArray(SQLITE3_ASSOC)) {
@@ -186,10 +186,11 @@ eod;
         return $users;
     }
 
-    public function getWindows() {
-
+    public function getWindows()
+    {
+        // Get list of all windows, ordered by their section.
         $window_objs = array();
-        $windows = @$this->query('SELECT * FROM window');
+        $windows = @$this->query('SELECT * FROM window ORDER BY section ASC');
         while ($row = $windows->fetchArray()) {
             array_push($window_objs, $row);
         }
@@ -198,24 +199,14 @@ eod;
         return $window_objs;
     }
 
-    public function getWindowsOrderBy($field, $order) {
-
-        $window_objs = array();
-        $windows = @$this->query("SELECT * FROM window ORDER BY $field $order");
-        while ($row = $windows->fetchArray()) {
-            array_push($window_objs, $row);
-        }
-        $windows->finalize();
-
-        return $window_objs;
-    }
-
-    public function getWindowIDBySection($section) {
+    public function getWindowIDBySection($section)
+    {
         $id = $this->querySingle("SELECT win_id FROM window WHERE section='$section'");
         return $id;
     }
 
-    public function getVNC_ClientInfo() {
+    public function getVNC_ClientInfo()
+    {
 
         $info = array();
 
@@ -227,6 +218,7 @@ eod;
 
         return $info;
     }
+
     /*
     public function getVNC_ClientWindowIDs() {
         $ids = array();
@@ -239,16 +231,19 @@ eod;
     }
     */
 
-    public function getState_Window($window_id) {
+    public function getWindowState($window_id)
+    {
         $state = @$this->querySingle('SELECT state FROM window WHERE win_id="'.$window_id.'"');
         return $state;
     }
 
-    public function setState_Window($window_id, $state) {
+    public function setWindowState($window_id, $state)
+    {
         $this->exec('UPDATE window SET state="'.$state.'" WHERE win_id="'.$window_id.'"');
     }
 
-    public function insertWindow($window) {
+    public function insertWindow($window)
+    {
         // transfer ob complete window object/array necessary
         $sql = 'INSERT INTO window (id, win_id, section, state, file, handler, userid, date) ' .
                 'VALUES ' . '("' .
@@ -260,7 +255,8 @@ eod;
         trace("sql=$sql, result=$new");
     }
 
-    public function deleteWindow($window_id) {
+    public function deleteWindow($window_id)
+    {
         $this->exec('DELETE FROM window WHERE win_id="'.$window_id.'"');
     }
 
@@ -270,17 +266,19 @@ eod;
     }
     */
 
-    public function deleteDebug($table, $id, $gt) {
+    public function deleteDebug($table, $id, $gt)
+    {
         $this->exec('DELETE FROM '.$table.' WHERE '.$id.' >"'.$gt.'"');
     }
 
-    public function updateWindow($window_id, $field, $value) {
+    public function updateWindow($window_id, $field, $value)
+    {
         $this->exec('UPDATE window SET '.$field.'="'.$value.'" WHERE win_id="'.$window_id.'"');
     }
-
 }
 
-function set_constants() {
+function set_constants()
+{
     // Get some constants from a configuration file.
 
     $conf = parse_ini_file("palma.ini");
@@ -323,7 +321,10 @@ function set_constants() {
     }
 
     // Set default values for constants missing in the configuration file.
-    // There is no default value for CONFIG_CONTROL_FILE.
+    if (!defined('CONFIG_CONTROL_FILE')) {
+        // By default we use control.php.
+        define('CONFIG_CONTROL_FILE', CONFIG_START_URL . 'control.php');
+    }
     if (!defined('CONFIG_DISPLAY')) {
         // By default we use X display :0.
         define('CONFIG_DISPLAY', ':0');
@@ -358,9 +359,21 @@ set_constants();
 if ($unittest[__FILE__]) {
     // Run unit test.
 
+    print('CONFIG_CONTROL_FILE = ' . CONFIG_CONTROL_FILE . "\n");
+    print('CONFIG_DISPLAY = ' . CONFIG_DISPLAY . "\n");
+    print('CONFIG_PASSWORD = ' . CONFIG_PASSWORD . "\n");
+    print('CONFIG_PIN = ' . CONFIG_PIN . "\n");
+    print('CONFIG_POLICY = ' . CONFIG_POLICY . "\n");
+    if (defined('CONFIG_SSH')) {
+        print('CONFIG_SSH = ' . CONFIG_SSH . "\n");
+    }
+    print('CONFIG_START_URL = ' . CONFIG_START_URL . "\n");
+    print('CONFIG_STATIONNAME = ' . CONFIG_STATIONNAME . "\n");
     print('CONFIG_THEME = ' . CONFIG_THEME . "\n");
+    print('CONFIG_UPLOAD_DIR = ' . CONFIG_UPLOAD_DIR . "\n");
 
-    function dbModifiedCallback() {
+    function dbModifiedCallback()
+    {
         echo("Triggered callback\n");
     }
 
@@ -404,5 +417,3 @@ if ($unittest[__FILE__]) {
     //~ var_dump($users);
     //~ $db->close();
 }
-
-?>

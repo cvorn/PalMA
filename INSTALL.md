@@ -23,7 +23,7 @@ commands must be run as root user):
 
 Some more packages are optional:
 
-    apt-get install gettext git libavcodec-extra unattended-upgrades
+    apt-get install gettext git libavcodec-extra make unattended-upgrades
 
 The last one must be configured:
 
@@ -105,8 +105,7 @@ this command to get a preliminary file:
     cp /var/www/html/examples/palma.ini /var/www/html/palma.ini
 
 Some entries in `palma.ini` still need to be fixed for your local installation.
-These include at least the entries stationname, theme, start_url and
-control_file.
+These include at least the entries theme and start_url.
 
 
 Customize an installation
@@ -160,7 +159,7 @@ the Raspberry Pi. The following configuration which is based on the Rasbian
 distribution (http://www.raspbian.org/) was successfully tested with a
 Raspberry Pi 1:
 
-    apt-get install dwb eog feh libjs-jquery nxinx-light openbox
+    apt-get install dwb eog feh libjs-jquery nginx-light openbox
     apt-get install php5-cgi php5-cli php5-curl php5-fpm php5-gd php5-intl php5-sqlite
     apt-get install ssvnc sqlite3 vlc wmctrl xdotool zathura
     mkdir -p /var/www/html
